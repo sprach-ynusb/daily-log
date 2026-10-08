@@ -1,0 +1,1134 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>DayLog Story - エモーショナル記録 & ストーリー出力</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <!-- Google Fonts: Inter & Noto Sans JP -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'Noto Sans JP', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      -webkit-user-select: none;
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    input, textarea, select {
+      user-select: auto;
+      -webkit-user-select: auto;
+    }
+    .hide-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .hide-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    .story-aspect {
+      aspect-ratio: 9 / 16;
+    }
+  </style>
+</head>
+<body class="bg-stone-950 text-stone-100 font-sans min-h-screen pb-16 antialiased selection:bg-amber-500 selection:text-white">
+
+  <header class="sticky top-0 z-30 bg-stone-950/85 backdrop-blur-md border-b border-stone-800/80 px-4 py-3 flex items-center justify-between">
+    <div class="flex items-center space-x-2.5">
+      <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-amber-500 via-rose-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-amber-500/20 text-white">
+        <i data-lucide="sparkles" class="w-4 h-4"></i>
+      </div>
+      <div>
+        <h1 class="font-extrabold tracking-tight text-sm text-white">DayLog Story</h1>
+        <p class="text-[10px] text-stone-400 font-medium">マイ写真・エモ背景 & ミニマル記録</p>
+      </div>
+    </div>
+    <div class="flex items-center space-x-2">
+      <button id="quickSampleBtn" class="flex items-center space-x-1.5 text-xs px-2.5 py-1.5 rounded-lg bg-stone-800 text-stone-300 active:bg-stone-700 transition font-medium border border-stone-700/60">
+        <i data-lucide="refresh-cw" class="w-3.5 h-3.5 text-stone-400"></i>
+        <span>サンプル</span>
+      </button>
+      <button id="openPreviewHeaderBtn" class="flex items-center space-x-1.5 text-xs px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold shadow-md shadow-amber-500/20 active:scale-95 transition">
+        <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+        <span>確認</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="max-w-md mx-auto px-4 pt-4 pb-20 space-y-4">
+
+    <section class="bg-stone-900/90 border border-stone-800/90 rounded-2xl p-4 shadow-xl space-y-3">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-1.5">
+          <i data-lucide="image" class="w-4 h-4 text-amber-400"></i>
+          <h2 class="text-xs font-bold text-stone-200 uppercase tracking-wider">背景画像の設定</h2>
+        </div>
+        <div id="sourceBadge" class="text-[10px] px-2 py-0.5 rounded-full font-semibold bg-stone-800 text-stone-300 border border-stone-700 flex items-center gap-1">
+          <i data-lucide="sparkles" class="w-3 h-3 text-amber-400"></i>
+          <span>フリー写真</span>
+        </div>
+      </div>
+
+      <!-- Action Buttons: Upload custom & Random Free -->
+      <div class="grid grid-cols-2 gap-2">
+        <!-- Custom Photo Upload Button -->
+        <label class="cursor-pointer flex items-center justify-center space-x-1.5 text-xs px-3 py-2.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 active:scale-95 transition font-semibold">
+          <i data-lucide="upload" class="w-3.5 h-3.5"></i>
+          <span>写真を選択</span>
+          <input type="file" id="customPhotoInput" accept="image/*" class="hidden">
+        </label>
+
+        <!-- Shuffle Random Free Photo Button -->
+        <button id="shuffleBgBtn" class="flex items-center justify-center space-x-1.5 text-xs px-3 py-2.5 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-200 border border-stone-700/80 active:scale-95 transition font-semibold">
+          <i data-lucide="shuffle" class="w-3.5 h-3.5 text-stone-400" id="shuffleIcon"></i>
+          <span>フリー写真に変更</span>
+        </button>
+      </div>
+
+      <!-- Background Image Preview & Sliders -->
+      <div class="flex items-center space-x-3 bg-stone-950/60 p-2.5 rounded-xl border border-stone-800">
+        <div class="w-16 h-20 rounded-lg overflow-hidden bg-stone-800 shrink-0 border border-stone-700 relative">
+          <img id="bgThumbnail" src="" alt="Thumbnail" class="w-full h-full object-cover">
+          <div id="bgLoadingSpinner" class="absolute inset-0 bg-black/60 flex items-center justify-center hidden">
+            <i data-lucide="loader-2" class="w-4 h-4 text-amber-400 animate-spin"></i>
+          </div>
+        </div>
+        <div class="flex-1 space-y-2">
+          <div>
+            <div class="flex justify-between text-[11px] text-stone-400 font-medium mb-1">
+              <span class="flex items-center gap-1"><i data-lucide="moon" class="w-3 h-3"></i> 暗さ (読みやすさ)</span>
+              <span id="darknessLabel">65%</span>
+            </div>
+            <input type="range" id="darknessSlider" min="20" max="90" value="65" class="w-full h-1.5 bg-stone-700 rounded-lg appearance-none cursor-pointer accent-amber-400">
+          </div>
+          <div>
+            <div class="flex justify-between text-[11px] text-stone-400 font-medium mb-1">
+              <span class="flex items-center gap-1"><i data-lucide="droplet" class="w-3 h-3"></i> ぼかし感</span>
+              <span id="blurLabel">微ぼかし</span>
+            </div>
+            <input type="range" id="blurSlider" min="0" max="10" value="3" class="w-full h-1.5 bg-stone-700 rounded-lg appearance-none cursor-pointer accent-amber-400">
+          </div>
+        </div>
+      </div>
+      
+      <p id="bgInfoNotice" class="text-[10px] text-stone-400 flex items-center justify-between">
+        <span>カメラロールの写真も自動で9:16比率にトリミング</span>
+        <span class="text-stone-400/80">端末内処理・安全</span>
+      </p>
+    </section>
+
+    <section class="bg-stone-900/90 border border-stone-800/90 rounded-2xl p-4 shadow-xl space-y-3">
+      <div class="flex items-center justify-between gap-3">
+        <div class="flex-1">
+          <label class="flex items-center space-x-1.5 text-[11px] font-semibold text-stone-400 uppercase tracking-wider mb-1">
+            <i data-lucide="calendar" class="w-3 h-3 text-amber-400"></i>
+            <span>日付</span>
+          </label>
+          <input type="date" id="logDate" class="w-full bg-stone-800/90 text-white font-semibold text-sm px-3 py-2 rounded-xl border border-stone-700/80 focus:outline-none focus:border-amber-400 transition">
+        </div>
+        <div class="w-2/5">
+          <label class="flex items-center space-x-1.5 text-[11px] font-semibold text-stone-400 uppercase tracking-wider mb-1">
+            <i data-lucide="activity" class="w-3 h-3 text-amber-400"></i>
+            <span>状態</span>
+          </label>
+          <div class="relative">
+            <select id="logMood" class="w-full appearance-none bg-stone-800/90 text-white font-semibold text-xs sm:text-sm px-3 py-2 rounded-xl border border-stone-700/80 focus:outline-none focus:border-amber-400 transition pr-7">
+              <option value="DEEP FOCUS">DEEP FOCUS</option>
+              <option value="PRODUCTIVE">PRODUCTIVE</option>
+              <option value="CALM & STEADY">CALM & STEADY</option>
+              <option value="ENERGIZED">ENERGIZED</option>
+              <option value="STEP BY STEP">STEP BY STEP</option>
+              <option value="COMPLETED">COMPLETED</option>
+            </select>
+            <div class="pointer-events-none absolute inset-y-0 right-2 flex items-center text-stone-400">
+              <i data-lucide="chevron-down" class="w-3.5 h-3.5"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <label class="flex items-center space-x-1.5 text-[11px] font-semibold text-stone-400 uppercase tracking-wider mb-1">
+          <i data-lucide="message-square-quote" class="w-3 h-3 text-amber-400"></i>
+          <span>今日の一言メモ</span>
+        </label>
+        <input type="text" id="logComment" placeholder="TOEIC公式問題集のリスニング正答率が安定してきた" class="w-full bg-stone-800/90 text-white placeholder-stone-500 text-sm px-3 py-2.5 rounded-xl border border-stone-700/80 focus:outline-none focus:border-amber-400 transition">
+      </div>
+    </section>
+
+    <section class="space-y-3">
+      <div class="flex items-center justify-between px-1">
+        <h2 class="text-sm font-bold text-stone-200 flex items-center space-x-1.5">
+          <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400"></i>
+          <span>達成した項目</span>
+          <span id="itemCountBadge" class="text-[11px] bg-amber-500/20 text-amber-300 font-bold px-2 py-0.5 rounded-full border border-amber-500/30">0件</span>
+        </h2>
+        <span class="text-[11px] text-stone-400">最大5〜6件推奨</span>
+      </div>
+
+      <!-- Quick Add Pills with Lucide Icons -->
+      <div class="flex items-center space-x-1.5 overflow-x-auto py-1 hide-scrollbar">
+        <button onclick="addPreset('TOEIC問題演習', '60', '分', 'book-open')" class="shrink-0 flex items-center space-x-1.5 text-xs bg-stone-800/90 hover:bg-stone-700 text-stone-200 px-3 py-1.5 rounded-xl border border-stone-700/60 active:scale-95 transition">
+          <i data-lucide="book-open" class="w-3.5 h-3.5 text-amber-400"></i>
+          <span>TOEIC</span>
+        </button>
+        <button onclick="addPreset('単語暗記', '100', '単語', 'file-text')" class="shrink-0 flex items-center space-x-1.5 text-xs bg-stone-800/90 hover:bg-stone-700 text-stone-200 px-3 py-1.5 rounded-xl border border-stone-700/60 active:scale-95 transition">
+          <i data-lucide="file-text" class="w-3.5 h-3.5 text-amber-400"></i>
+          <span>単語</span>
+        </button>
+        <button onclick="addPreset('読書', '30', 'ページ', 'bookmark')" class="shrink-0 flex items-center space-x-1.5 text-xs bg-stone-800/90 hover:bg-stone-700 text-stone-200 px-3 py-1.5 rounded-xl border border-stone-700/60 active:scale-95 transition">
+          <i data-lucide="bookmark" class="w-3.5 h-3.5 text-amber-400"></i>
+          <span>読書</span>
+        </button>
+        <button onclick="addPreset('ウェイトトレーニング', '45', '分', 'dumbbell')" class="shrink-0 flex items-center space-x-1.5 text-xs bg-stone-800/90 hover:bg-stone-700 text-stone-200 px-3 py-1.5 rounded-xl border border-stone-700/60 active:scale-95 transition">
+          <i data-lucide="dumbbell" class="w-3.5 h-3.5 text-amber-400"></i>
+          <span>筋トレ</span>
+        </button>
+        <button onclick="addPreset('アプリ開発・実装', '90', '分', 'code')" class="shrink-0 flex items-center space-x-1.5 text-xs bg-stone-800/90 hover:bg-stone-700 text-stone-200 px-3 py-1.5 rounded-xl border border-stone-700/60 active:scale-95 transition">
+          <i data-lucide="code" class="w-3.5 h-3.5 text-amber-400"></i>
+          <span>コーディング</span>
+        </button>
+        <button onclick="addPreset('ランニング', '5.0', 'km', 'activity')" class="shrink-0 flex items-center space-x-1.5 text-xs bg-stone-800/90 hover:bg-stone-700 text-stone-200 px-3 py-1.5 rounded-xl border border-stone-700/60 active:scale-95 transition">
+          <i data-lucide="activity" class="w-3.5 h-3.5 text-amber-400"></i>
+          <span>ラン</span>
+        </button>
+      </div>
+
+      <!-- Activity Items Container -->
+      <div id="activityList" class="space-y-2.5">
+        <!-- Rendered dynamically -->
+      </div>
+
+      <!-- Add New Custom Item Button -->
+      <button id="addNewItemBtn" class="w-full py-3 border-2 border-dashed border-stone-800 hover:border-amber-400/80 rounded-2xl flex items-center justify-center space-x-2 text-stone-300 font-semibold text-sm active:bg-stone-900 transition">
+        <i data-lucide="plus" class="w-4 h-4 text-amber-400"></i>
+        <span>項目を新規追加</span>
+      </button>
+    </section>
+
+    <section class="space-y-3 pt-2">
+      <div class="flex items-center justify-between px-1">
+        <h2 class="text-sm font-bold text-stone-200 flex items-center space-x-1.5">
+          <i data-lucide="smartphone" class="w-4 h-4 text-amber-400"></i>
+          <span>ストーリー リアルタイムプレビュー</span>
+        </h2>
+        <span class="text-[11px] text-amber-300 font-medium flex items-center">
+          <span class="w-1.5 h-1.5 rounded-full bg-amber-400 mr-1.5 animate-pulse"></span>
+          写真合成中
+        </span>
+      </div>
+
+      <div class="bg-stone-900 border border-stone-800 rounded-3xl p-3 shadow-2xl flex flex-col items-center">
+        <!-- 9:16 Canvas Wrapper -->
+        <div class="w-full max-w-[270px] story-aspect rounded-2xl overflow-hidden shadow-2xl ring-1 ring-white/10 relative bg-stone-950">
+          <canvas id="storyCanvas" width="1080" height="1920" class="w-full h-full object-contain block"></canvas>
+        </div>
+
+        <p class="text-[11px] text-stone-400 text-center mt-3">
+          Instagramストーリーズ規格 (1080 × 1920px)
+        </p>
+
+        <!-- Actions -->
+        <div class="grid grid-cols-2 gap-3 w-full mt-4">
+          <button id="downloadBtn" class="flex items-center justify-center space-x-2 bg-stone-800 hover:bg-stone-700 text-white font-bold py-3.5 px-4 rounded-xl text-xs sm:text-sm border border-stone-700 active:scale-95 transition shadow-lg">
+            <i data-lucide="download" class="w-4 h-4 text-amber-400"></i>
+            <span>画像を保存</span>
+          </button>
+
+          <button id="shareBtn" class="flex items-center justify-center space-x-2 bg-gradient-to-r from-amber-500 to-rose-500 hover:from-amber-400 hover:to-rose-400 text-stone-950 font-extrabold py-3.5 px-4 rounded-xl text-xs sm:text-sm active:scale-95 transition shadow-lg shadow-amber-500/20">
+            <i data-lucide="share-2" class="w-4 h-4"></i>
+            <span>ストーリーへ共有</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Modal for direct image saving & fallback -->
+  <div id="previewModal" class="fixed inset-0 z-50 bg-black/90 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="bg-stone-900 border border-stone-800 rounded-3xl max-w-sm w-full p-4 flex flex-col items-center space-y-3.5 max-h-[92vh] overflow-y-auto">
+      <div class="w-full flex items-center justify-between pb-2 border-b border-stone-800">
+        <h3 class="font-bold text-sm text-white flex items-center gap-1.5">
+          <i data-lucide="image" class="w-4 h-4 text-amber-400"></i>
+          <span>保存用プレビュー</span>
+        </h3>
+        <button id="closeModalBtn" class="text-stone-400 hover:text-white p-1 rounded-lg">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      
+      <div class="w-full max-w-[240px] story-aspect rounded-2xl overflow-hidden ring-1 ring-white/10 shadow-2xl bg-black">
+        <img id="modalImagePreview" src="" alt="Story Preview" class="w-full h-full object-contain">
+      </div>
+
+      <div class="text-center text-xs text-stone-300 space-y-1">
+        <p class="font-semibold text-white">スマホでの保存方法</p>
+        <p class="text-[11px] text-stone-400">画像を長押しして「写真に追加」するか、下のボタンからInstagramや写真アプリへ共有できます。</p>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2.5 w-full pt-1">
+        <button id="modalDownloadBtn" class="flex items-center justify-center space-x-1.5 w-full py-3 bg-stone-800 rounded-xl font-bold text-xs text-white border border-stone-700 active:scale-95 transition">
+          <i data-lucide="download" class="w-3.5 h-3.5 text-amber-400"></i>
+          <span>ファイル保存</span>
+        </button>
+        <button id="modalShareBtn" class="flex items-center justify-center space-x-1.5 w-full py-3 bg-amber-500 text-stone-950 font-bold rounded-xl text-xs shadow-lg active:scale-95 transition">
+          <i data-lucide="share-2" class="w-3.5 h-3.5"></i>
+          <span>共有する</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notification Toast -->
+  <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-stone-800 text-white border border-stone-700 shadow-2xl rounded-full px-4 py-2 text-xs font-semibold flex items-center space-x-2 opacity-0 pointer-events-none transition-all duration-300">
+    <i data-lucide="check" class="w-3.5 h-3.5 text-emerald-400"></i>
+    <span id="toastMsg">保存しました</span>
+  </div>
+
+  <script>
+    // Curated high quality aesthetic royalty-free images (moody, cafe, books, sunset, study desk, minimal architecture)
+    const AESTHETIC_BG_COLLECTION = [
+      'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=1080&q=80', // Moody coffee cup
+      'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&w=1080&q=80', // Books & calm light
+      'https://images.unsplash.com/photo-1495616811223-4d98c6e9c869?auto=format&fit=crop&w=1080&q=80', // Serene sunset clouds
+      'https://images.unsplash.com/photo-1517842645767-c639042777db?auto=format&fit=crop&w=1080&q=80', // Clean notebook & desk
+      'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?auto=format&fit=crop&w=1080&q=80', // Minimal books stacks
+      'https://images.unsplash.com/photo-1518495973542-4542c06a5843?auto=format&fit=crop&w=1080&q=80', // Sunlight through window leaves
+      'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1080&q=80', // Twilight ocean dusk
+      'https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?auto=format&fit=crop&w=1080&q=80', // Moody misty forest road
+      'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1080&q=80', // Golden hour water reflection
+      'https://images.unsplash.com/photo-1513542789411-b6a5d4f31634?auto=format&fit=crop&w=1080&q=80', // Dark starry night glow
+      'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1080&q=80', // Minimalist modern architecture dusk
+      'https://images.unsplash.com/photo-1470240731273-7821a6eeb6bd?auto=format&fit=crop&w=1080&q=80'  // Warm cozy morning room
+    ];
+
+    let appState = {
+      date: new Date().toISOString().split('T')[0],
+      mood: 'DEEP FOCUS',
+      comment: 'TOEIC公式問題集のリスニング正答率が安定してきた',
+      bgUrl: AESTHETIC_BG_COLLECTION[0],
+      isCustomPhoto: false, // Tracks if user uploaded their own photo
+      bgDarkness: 0.65, // 0.2 to 0.9
+      bgBlur: 3,        // 0 to 10
+      items: [
+        { id: '1', title: 'TOEIC公式問題集', value: '75', unit: '分', iconKey: 'book-open' },
+        { id: '2', title: '金フレ単語復習', value: '150', unit: '語', iconKey: 'file-text' },
+        { id: '3', title: 'ジム 筋トレ', value: '45', unit: '分', iconKey: 'dumbbell' },
+        { id: '4', title: 'リーダブルコード精読', value: '24', unit: 'ページ', iconKey: 'bookmark' }
+      ]
+    };
+
+    const STORAGE_KEY = 'daylog_aesthetic_story_v4';
+    function loadSavedState() {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed && Array.isArray(parsed.items)) {
+            // Note: Don't preserve huge base64 in localstorage to avoid quota exceed
+            const { bgUrl, ...rest } = parsed;
+            if (bgUrl && !bgUrl.startsWith('data:')) {
+              appState.bgUrl = bgUrl;
+            }
+            appState = { ...appState, ...rest };
+          }
+        }
+      } catch (e) {
+        console.error('Failed to load storage', e);
+      }
+    }
+
+    function saveState() {
+      try {
+        // Exclude base64 image data from localstorage to prevent QUOTA_EXCEEDED_ERR
+        const stateToSave = { ...appState };
+        if (stateToSave.bgUrl && stateToSave.bgUrl.startsWith('data:')) {
+          stateToSave.bgUrl = AESTHETIC_BG_COLLECTION[0];
+          stateToSave.isCustomPhoto = false;
+        }
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
+      } catch (e) {
+        console.error('Failed to save storage', e);
+      }
+    }
+
+    // Lucide icon options available for items
+    const AVAILABLE_ICONS = [
+      { key: 'book-open', label: '学習' },
+      { key: 'file-text', label: '単語/ノート' },
+      { key: 'bookmark', label: '読書' },
+      { key: 'dumbbell', label: '筋トレ' },
+      { key: 'activity', label: 'ラン/運動' },
+      { key: 'code', label: '開発' },
+      { key: 'check-circle-2', label: 'タスク' },
+      { key: 'zap', label: '集中' }
+    ];
+
+    // Preloaded image element cached to prevent flickering
+    let loadedBgImage = new Image();
+    loadedBgImage.crossOrigin = 'anonymous';
+
+    // DOM Elements
+    const logDateInput = document.getElementById('logDate');
+    const logMoodSelect = document.getElementById('logMood');
+    const logCommentInput = document.getElementById('logComment');
+    const activityList = document.getElementById('activityList');
+    const itemCountBadge = document.getElementById('itemCountBadge');
+    const addNewItemBtn = document.getElementById('addNewItemBtn');
+    const quickSampleBtn = document.getElementById('quickSampleBtn');
+    const customPhotoInput = document.getElementById('customPhotoInput');
+    const shuffleBgBtn = document.getElementById('shuffleBgBtn');
+    const shuffleIcon = document.getElementById('shuffleIcon');
+    const sourceBadge = document.getElementById('sourceBadge');
+    const bgThumbnail = document.getElementById('bgThumbnail');
+    const bgLoadingSpinner = document.getElementById('bgLoadingSpinner');
+    const darknessSlider = document.getElementById('darknessSlider');
+    const darknessLabel = document.getElementById('darknessLabel');
+    const blurSlider = document.getElementById('blurSlider');
+    const blurLabel = document.getElementById('blurLabel');
+
+    const storyCanvas = document.getElementById('storyCanvas');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const shareBtn = document.getElementById('shareBtn');
+    const openPreviewHeaderBtn = document.getElementById('openPreviewHeaderBtn');
+    const previewModal = document.getElementById('previewModal');
+    const closeModalBtn = document.getElementById('closeModalBtn');
+    const modalImagePreview = document.getElementById('modalImagePreview');
+    const modalDownloadBtn = document.getElementById('modalDownloadBtn');
+    const modalShareBtn = document.getElementById('modalShareBtn');
+    const toast = document.getElementById('toast');
+    const toastMsg = document.getElementById('toastMsg');
+
+    function showToast(text) {
+      toastMsg.textContent = text;
+      toast.classList.remove('opacity-0', 'pointer-events-none');
+      toast.classList.add('opacity-100');
+      setTimeout(() => {
+        toast.classList.remove('opacity-100');
+        toast.classList.add('opacity-0', 'pointer-events-none');
+      }, 2200);
+    }
+
+    function updateSourceBadgeUI() {
+      if (appState.isCustomPhoto) {
+        sourceBadge.innerHTML = `<i data-lucide="camera" class="w-3 h-3 text-emerald-400"></i><span class="text-emerald-300">マイ写真</span>`;
+        sourceBadge.className = "text-[10px] px-2 py-0.5 rounded-full font-semibold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 flex items-center gap-1";
+      } else {
+        sourceBadge.innerHTML = `<i data-lucide="sparkles" class="w-3 h-3 text-amber-400"></i><span class="text-amber-300">フリー写真</span>`;
+        sourceBadge.className = "text-[10px] px-2 py-0.5 rounded-full font-semibold bg-amber-500/15 text-amber-300 border border-amber-500/30 flex items-center gap-1";
+      }
+      lucide.createIcons();
+    }
+
+    function setBackgroundImage(url, isShuffle = false, isUserPhoto = false) {
+      bgLoadingSpinner.classList.remove('hidden');
+      if (isShuffle) {
+        shuffleIcon.classList.add('animate-spin');
+      }
+
+      const img = new Image();
+      if (!isUserPhoto) {
+        img.crossOrigin = 'anonymous';
+      }
+      img.onload = () => {
+        loadedBgImage = img;
+        appState.bgUrl = url;
+        appState.isCustomPhoto = isUserPhoto;
+        bgThumbnail.src = url;
+        bgLoadingSpinner.classList.add('hidden');
+        shuffleIcon.classList.remove('animate-spin');
+        updateSourceBadgeUI();
+        saveState();
+        renderStoryCanvas();
+        if (isShuffle) showToast('フリー写真を変更しました');
+        if (isUserPhoto) showToast('写真を取り込みました');
+      };
+      img.onerror = () => {
+        bgLoadingSpinner.classList.add('hidden');
+        shuffleIcon.classList.remove('animate-spin');
+        showToast('画像の読み込みに失敗しました');
+      };
+      img.src = url;
+    }
+
+    // Custom Photo Upload Event
+    customPhotoInput.addEventListener('change', (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+
+      if (!file.type.startsWith('image/')) {
+        showToast('画像ファイルを選択してください');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const dataUrl = event.target.result;
+        setBackgroundImage(dataUrl, false, true);
+      };
+      reader.onerror = () => {
+        showToast('写真の読み込みに失敗しました');
+      };
+      reader.readAsDataURL(file);
+
+      // Reset value so user can re-select the same image if needed
+      e.target.value = '';
+    });
+
+    function getRandomBgUrl() {
+      // Pick a random image different from current
+      const filtered = AESTHETIC_BG_COLLECTION.filter(url => url !== appState.bgUrl);
+      const randomIndex = Math.floor(Math.random() * filtered.length);
+      return filtered[randomIndex] || AESTHETIC_BG_COLLECTION[0];
+    }
+
+    shuffleBgBtn.addEventListener('click', () => {
+      const nextUrl = getRandomBgUrl();
+      setBackgroundImage(nextUrl, true, false);
+    });
+
+    darknessSlider.addEventListener('input', (e) => {
+      const val = parseInt(e.target.value, 10);
+      appState.bgDarkness = val / 100;
+      darknessLabel.textContent = `${val}%`;
+      saveState();
+      renderStoryCanvas();
+    });
+
+    blurSlider.addEventListener('input', (e) => {
+      const val = parseInt(e.target.value, 10);
+      appState.bgBlur = val;
+      blurLabel.textContent = val === 0 ? 'なし' : (val < 5 ? '微ぼかし' : '強め');
+      saveState();
+      renderStoryCanvas();
+    });
+
+    function renderActivityList() {
+      activityList.innerHTML = '';
+      itemCountBadge.textContent = `${appState.items.length}件`;
+
+      appState.items.forEach((item) => {
+        const card = document.createElement('div');
+        card.className = 'bg-stone-900 border border-stone-800 rounded-2xl p-3 shadow-md flex items-center space-x-2.5 transition';
+
+        const iconOptionsHtml = AVAILABLE_ICONS.map(ic => 
+          `<option value="${ic.key}" ${item.iconKey === ic.key ? 'selected' : ''}>${ic.key}</option>`
+        ).join('');
+
+        card.innerHTML = `
+          <!-- Icon Display & Dropdown -->
+          <div class="relative shrink-0 flex items-center justify-center w-11 h-11 bg-stone-800/90 rounded-xl border border-stone-700/80">
+            <i data-lucide="${item.iconKey || 'check-circle-2'}" class="w-5 h-5 text-amber-400 pointer-events-none"></i>
+            <select data-id="${item.id}" data-field="iconKey" class="absolute inset-0 opacity-0 cursor-pointer">
+              ${iconOptionsHtml}
+            </select>
+          </div>
+
+          <!-- Activity Name & Value Inputs -->
+          <div class="flex-1 grid grid-cols-12 gap-1.5 items-center">
+            <div class="col-span-6">
+              <input type="text" value="${item.title}" placeholder="項目名" data-id="${item.id}" data-field="title"
+                class="w-full bg-stone-800/90 text-white text-xs sm:text-sm font-semibold px-2.5 py-2 rounded-xl border border-stone-700/80 focus:border-amber-400 focus:outline-none transition">
+            </div>
+            <div class="col-span-3">
+              <input type="text" value="${item.value}" placeholder="数" data-id="${item.id}" data-field="value"
+                class="w-full bg-stone-800/90 text-amber-300 font-bold text-xs sm:text-sm px-2 py-2 rounded-xl border border-stone-700/80 focus:border-amber-400 focus:outline-none text-right transition">
+            </div>
+            <div class="col-span-3">
+              <input type="text" value="${item.unit}" placeholder="単位" data-id="${item.id}" data-field="unit"
+                class="w-full bg-stone-800/90 text-stone-300 font-medium text-xs sm:text-sm px-2 py-2 rounded-xl border border-stone-700/80 focus:border-amber-400 focus:outline-none transition">
+            </div>
+          </div>
+
+          <!-- Delete Button -->
+          <button data-id="${item.id}" class="delete-item-btn p-2 text-stone-500 hover:text-rose-400 active:scale-90 transition rounded-lg">
+            <i data-lucide="trash-2" class="w-4 h-4 pointer-events-none"></i>
+          </button>
+        `;
+
+        activityList.appendChild(card);
+      });
+
+      lucide.createIcons();
+
+      activityList.querySelectorAll('input, select').forEach(input => {
+        input.addEventListener('change', (e) => {
+          const id = e.target.getAttribute('data-id');
+          const field = e.target.getAttribute('data-field');
+          const target = appState.items.find(i => i.id === id);
+          if (target) {
+            target[field] = e.target.value;
+            saveState();
+            renderActivityList();
+            renderStoryCanvas();
+          }
+        });
+        if (input.tagName === 'INPUT') {
+          input.addEventListener('input', (e) => {
+            const id = e.target.getAttribute('data-id');
+            const field = e.target.getAttribute('data-field');
+            const target = appState.items.find(i => i.id === id);
+            if (target) {
+              target[field] = e.target.value;
+              saveState();
+              renderStoryCanvas();
+            }
+          });
+        }
+      });
+
+      activityList.querySelectorAll('.delete-item-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const id = e.currentTarget.getAttribute('data-id');
+          appState.items = appState.items.filter(i => i.id !== id);
+          saveState();
+          renderActivityList();
+          renderStoryCanvas();
+        });
+      });
+    }
+
+    window.addPreset = function(title, value, unit, iconKey) {
+      appState.items.push({
+        id: Date.now().toString(),
+        title,
+        value,
+        unit,
+        iconKey: iconKey || 'check-circle-2'
+      });
+      saveState();
+      renderActivityList();
+      renderStoryCanvas();
+      showToast(`「${title}」を追加しました`);
+    };
+
+    function drawVectorIcon(ctx, iconKey, centerX, centerY, size, color) {
+      ctx.save();
+      ctx.strokeStyle = color;
+      ctx.fillStyle = color;
+      ctx.lineWidth = 4;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+
+      const s = size / 24;
+
+      switch (iconKey) {
+        case 'book-open':
+          ctx.beginPath();
+          ctx.moveTo(centerX, centerY - 6 * s);
+          ctx.lineTo(centerX, centerY + 8 * s);
+          ctx.moveTo(centerX, centerY + 8 * s);
+          ctx.quadraticCurveTo(centerX - 6 * s, centerY + 5 * s, centerX - 10 * s, centerY + 7 * s);
+          ctx.lineTo(centerX - 10 * s, centerY - 7 * s);
+          ctx.quadraticCurveTo(centerX - 6 * s, centerY - 9 * s, centerX, centerY - 6 * s);
+          ctx.moveTo(centerX, centerY + 8 * s);
+          ctx.quadraticCurveTo(centerX + 6 * s, centerY + 5 * s, centerX + 10 * s, centerY + 7 * s);
+          ctx.lineTo(centerX + 10 * s, centerY - 7 * s);
+          ctx.quadraticCurveTo(centerX + 6 * s, centerY - 9 * s, centerX, centerY - 6 * s);
+          ctx.stroke();
+          break;
+
+        case 'dumbbell':
+          ctx.beginPath();
+          ctx.moveTo(centerX - 9 * s, centerY);
+          ctx.lineTo(centerX + 9 * s, centerY);
+          ctx.stroke();
+          ctx.lineWidth = 6;
+          ctx.beginPath();
+          ctx.moveTo(centerX - 6 * s, centerY - 7 * s);
+          ctx.lineTo(centerX - 6 * s, centerY + 7 * s);
+          ctx.moveTo(centerX - 9 * s, centerY - 5 * s);
+          ctx.lineTo(centerX - 9 * s, centerY + 5 * s);
+          ctx.moveTo(centerX + 6 * s, centerY - 7 * s);
+          ctx.lineTo(centerX + 6 * s, centerY + 7 * s);
+          ctx.moveTo(centerX + 9 * s, centerY - 5 * s);
+          ctx.lineTo(centerX + 9 * s, centerY + 5 * s);
+          ctx.stroke();
+          break;
+
+        case 'file-text':
+          ctx.beginPath();
+          ctx.roundRect(centerX - 7 * s, centerY - 9 * s, 14 * s, 18 * s, 3 * s);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(centerX - 4 * s, centerY - 3 * s);
+          ctx.lineTo(centerX + 4 * s, centerY - 3 * s);
+          ctx.moveTo(centerX - 4 * s, centerY + 2 * s);
+          ctx.lineTo(centerX + 2 * s, centerY + 2 * s);
+          ctx.stroke();
+          break;
+
+        case 'bookmark':
+          ctx.beginPath();
+          ctx.moveTo(centerX - 7 * s, centerY - 9 * s);
+          ctx.lineTo(centerX + 7 * s, centerY - 9 * s);
+          ctx.lineTo(centerX + 7 * s, centerY + 9 * s);
+          ctx.lineTo(centerX, centerY + 4 * s);
+          ctx.lineTo(centerX - 7 * s, centerY + 9 * s);
+          ctx.closePath();
+          ctx.stroke();
+          break;
+
+        case 'code':
+          ctx.beginPath();
+          ctx.moveTo(centerX - 5 * s, centerY - 7 * s);
+          ctx.lineTo(centerX - 10 * s, centerY);
+          ctx.lineTo(centerX - 5 * s, centerY + 7 * s);
+          ctx.moveTo(centerX + 5 * s, centerY - 7 * s);
+          ctx.lineTo(centerX + 10 * s, centerY);
+          ctx.lineTo(centerX + 5 * s, centerY + 7 * s);
+          ctx.moveTo(centerX + 2 * s, centerY - 8 * s);
+          ctx.lineTo(centerX - 2 * s, centerY + 8 * s);
+          ctx.stroke();
+          break;
+
+        case 'activity':
+          ctx.beginPath();
+          ctx.moveTo(centerX - 10 * s, centerY);
+          ctx.lineTo(centerX - 5 * s, centerY);
+          ctx.lineTo(centerX - 2 * s, centerY - 8 * s);
+          ctx.lineTo(centerX + 2 * s, centerY + 8 * s);
+          ctx.lineTo(centerX + 5 * s, centerY);
+          ctx.lineTo(centerX + 10 * s, centerY);
+          ctx.stroke();
+          break;
+
+        case 'zap':
+          ctx.beginPath();
+          ctx.moveTo(centerX + 2 * s, centerY - 10 * s);
+          ctx.lineTo(centerX - 6 * s, centerY + 1 * s);
+          ctx.lineTo(centerX - 1 * s, centerY + 1 * s);
+          ctx.lineTo(centerX - 2 * s, centerY + 10 * s);
+          ctx.lineTo(centerX + 6 * s, centerY - 1 * s);
+          ctx.lineTo(centerX + 1 * s, centerY - 1 * s);
+          ctx.closePath();
+          ctx.fill();
+          break;
+
+        default:
+          ctx.beginPath();
+          ctx.arc(centerX, centerY, 8 * s, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(centerX - 4 * s, centerY);
+          ctx.lineTo(centerX - 1 * s, centerY + 3 * s);
+          ctx.lineTo(centerX + 5 * s, centerY - 3 * s);
+          ctx.stroke();
+          break;
+      }
+
+      ctx.restore();
+    }
+
+    function renderStoryCanvas() {
+      const ctx = storyCanvas.getContext('2d');
+      const W = 1080;
+      const H = 1920;
+
+      ctx.clearRect(0, 0, W, H);
+
+      // 1. Draw Background Image (Cover fit + optional blur)
+      if (loadedBgImage && loadedBgImage.complete && loadedBgImage.naturalWidth > 0) {
+        ctx.save();
+        if (appState.bgBlur > 0) {
+          ctx.filter = `blur(${appState.bgBlur * 2.5}px)`;
+        }
+
+        // Draw cover (aspect ratio 9:16)
+        const imgRatio = loadedBgImage.naturalWidth / loadedBgImage.naturalHeight;
+        const targetRatio = W / H;
+        let renderW, renderH, offsetX, offsetY;
+
+        if (imgRatio > targetRatio) {
+          renderH = H;
+          renderW = H * imgRatio;
+          offsetX = (W - renderW) / 2;
+          offsetY = 0;
+        } else {
+          renderW = W;
+          renderH = W / imgRatio;
+          offsetX = 0;
+          offsetY = (H - renderH) / 2;
+        }
+
+        // Expand slightly if blurred to prevent edge bleeding
+        const bleed = appState.bgBlur > 0 ? 30 : 0;
+        ctx.drawImage(loadedBgImage, offsetX - bleed, offsetY - bleed, renderW + bleed * 2, renderH + bleed * 2);
+        ctx.restore();
+      } else {
+        // Fallback gradient if image not loaded yet
+        const grad = ctx.createLinearGradient(0, 0, 0, H);
+        grad.addColorStop(0, '#1c1917');
+        grad.addColorStop(1, '#0c0a09');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, W, H);
+      }
+
+      // 2. Darkness & Cinematic Vignette Overlay
+      ctx.save();
+      // Base dark tinted layer based on user slider
+      ctx.fillStyle = `rgba(12, 10, 9, ${appState.bgDarkness})`;
+      ctx.fillRect(0, 0, W, H);
+
+      // Top & Bottom vignette gradient for contrast
+      const vigGrad = ctx.createLinearGradient(0, 0, 0, H);
+      vigGrad.addColorStop(0, 'rgba(0, 0, 0, 0.65)');
+      vigGrad.addColorStop(0.2, 'rgba(0, 0, 0, 0.2)');
+      vigGrad.addColorStop(0.8, 'rgba(0, 0, 0, 0.3)');
+      vigGrad.addColorStop(1, 'rgba(0, 0, 0, 0.85)');
+      ctx.fillStyle = vigGrad;
+      ctx.fillRect(0, 0, W, H);
+      ctx.restore();
+
+      // Rounded rect helper
+      function drawRoundedRect(x, y, w, h, radius, fill, stroke) {
+        ctx.beginPath();
+        ctx.moveTo(x + radius, y);
+        ctx.arcTo(x + w, y, x + w, y + h, radius);
+        ctx.arcTo(x + w, y + h, x, y + h, radius);
+        ctx.arcTo(x, y + h, x, y, radius);
+        ctx.arcTo(x, y, x + w, y, radius);
+        ctx.closePath();
+        if (fill) {
+          ctx.fillStyle = fill;
+          ctx.fill();
+        }
+        if (stroke) {
+          ctx.strokeStyle = stroke;
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        }
+      }
+
+      // Palette
+      const accentColor = '#F59E0B'; // Amber 500
+      const primaryTextColor = '#FFFFFF';
+      const secondaryTextColor = '#D6D3D1'; // Stone 300
+      const cardBg = 'rgba(28, 25, 23, 0.68)'; // Glassmorphic moody stone card
+      const cardBorder = 'rgba(255, 255, 255, 0.16)';
+
+      // 3. Instagram Safe Zone Header
+      const startY = 220;
+
+      // Small category tag
+      ctx.font = '800 22px Inter, sans-serif';
+      ctx.fillStyle = accentColor;
+      ctx.letterSpacing = '4px';
+      ctx.fillText('DAILY RECORD', 90, startY);
+      ctx.letterSpacing = '0px';
+
+      // Date Formatting
+      const dateObj = new Date(appState.date || new Date());
+      const dayNames = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
+      const yyyy = dateObj.getFullYear();
+      const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+      const dd = String(dateObj.getDate()).padStart(2, '0');
+      const dayStr = dayNames[dateObj.getDay()] || '';
+
+      ctx.font = '900 86px Inter, "Noto Sans JP", sans-serif';
+      ctx.fillStyle = primaryTextColor;
+      ctx.fillText(`${yyyy}.${mm}.${dd}`, 90, startY + 86);
+
+      // Day of week
+      ctx.font = '700 28px Inter, sans-serif';
+      ctx.fillStyle = secondaryTextColor;
+      ctx.fillText(dayStr, 90, startY + 134);
+
+      // Status Tag Pill (No emoji)
+      const moodText = appState.mood || 'DEEP FOCUS';
+      ctx.font = '800 22px Inter, sans-serif';
+      const moodWidth = ctx.measureText(moodText).width + 64;
+      const moodX = W - 90 - moodWidth;
+      const moodY = startY + 95;
+
+      drawRoundedRect(moodX, moodY, moodWidth, 50, 25, 'rgba(245, 158, 11, 0.22)', 'rgba(245, 158, 11, 0.45)');
+      ctx.fillStyle = accentColor;
+      ctx.beginPath();
+      ctx.arc(moodX + 22, moodY + 25, 5, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#FEF3C7';
+      ctx.letterSpacing = '1px';
+      ctx.fillText(moodText, moodX + 38, moodY + 33);
+      ctx.letterSpacing = '0px';
+
+      // Elegant divider
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.18)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(90, startY + 175);
+      ctx.lineTo(W - 90, startY + 175);
+      ctx.stroke();
+
+      // 4. Activity Cards
+      let cardY = startY + 225;
+      const cardX = 90;
+      const cardW = W - 180;
+      const cardH = 135;
+      const cardGap = 22;
+
+      const itemsToDraw = appState.items.slice(0, 6);
+
+      if (itemsToDraw.length === 0) {
+        drawRoundedRect(cardX, cardY, cardW, 160, 28, cardBg, cardBorder);
+        ctx.font = '600 32px "Noto Sans JP", sans-serif';
+        ctx.fillStyle = secondaryTextColor;
+        ctx.textAlign = 'center';
+        ctx.fillText('項目を追加してください', W / 2, cardY + 90);
+        ctx.textAlign = 'left';
+        cardY += 190;
+      } else {
+        itemsToDraw.forEach((item) => {
+          // Glass Card
+          drawRoundedRect(cardX, cardY, cardW, cardH, 28, cardBg, cardBorder);
+
+          // Icon Plate
+          const iconBoxX = cardX + 26;
+          const iconBoxY = cardY + 24;
+          drawRoundedRect(iconBoxX, iconBoxY, 86, 86, 22, 'rgba(245, 158, 11, 0.18)', 'rgba(255, 255, 255, 0.12)');
+
+          // Vector Lucide Icon
+          drawVectorIcon(ctx, item.iconKey || 'check-circle-2', iconBoxX + 43, iconBoxY + 43, 44, accentColor);
+
+          // Title
+          ctx.font = '700 36px "Noto Sans JP", Inter, sans-serif';
+          ctx.fillStyle = primaryTextColor;
+          let title = item.title || 'タイトル未設定';
+          if (title.length > 13) title = title.substring(0, 12) + '…';
+          ctx.fillText(title, cardX + 138, cardY + 80);
+
+          // Value and Unit
+          const valueStr = String(item.value || '0');
+          const unitStr = String(item.unit || '');
+
+          ctx.font = '900 52px Inter, sans-serif';
+          const valMetrics = ctx.measureText(valueStr);
+          ctx.font = '600 28px "Noto Sans JP", sans-serif';
+          const unitMetrics = ctx.measureText(unitStr);
+
+          const rightMargin = cardX + cardW - 35;
+          const startRightX = rightMargin - unitMetrics.width;
+
+          ctx.fillStyle = secondaryTextColor;
+          ctx.fillText(unitStr, startRightX, cardY + 80);
+
+          ctx.font = '900 52px Inter, sans-serif';
+          ctx.fillStyle = accentColor;
+          ctx.fillText(valueStr, startRightX - valMetrics.width - 8, cardY + 80);
+
+          cardY += cardH + cardGap;
+        });
+      }
+
+      // 5. Today's Memo Box
+      const commentY = Math.max(cardY + 24, 1330);
+      const commentH = 200;
+
+      drawRoundedRect(cardX, commentY, cardW, commentH, 30, cardBg, cardBorder);
+
+      ctx.font = '800 22px Inter, sans-serif';
+      ctx.fillStyle = accentColor;
+      ctx.letterSpacing = '3px';
+      ctx.fillText('TODAY\'S MEMO', cardX + 38, commentY + 60);
+      ctx.letterSpacing = '0px';
+
+      const commentText = appState.comment ? `${appState.comment}` : '目標に向かって今日も確実に前進。';
+      ctx.font = '500 32px "Noto Sans JP", sans-serif';
+      ctx.fillStyle = primaryTextColor;
+
+      const maxTextWidth = cardW - 76;
+      let line = '';
+      let lineY = commentY + 115;
+      const chars = Array.from(commentText);
+
+      for (let n = 0; n < chars.length; n++) {
+        const testLine = line + chars[n];
+        const metrics = ctx.measureText(testLine);
+        if (metrics.width > maxTextWidth && n > 0) {
+          ctx.fillText(line, cardX + 38, lineY);
+          line = chars[n];
+          lineY += 46;
+          if (lineY > commentY + commentH - 18) break;
+        } else {
+          line = testLine;
+        }
+      }
+      ctx.fillText(line, cardX + 38, lineY);
+
+      // 6. Safe Footer Zone
+      const footerY = 1730;
+
+      ctx.textAlign = 'center';
+      ctx.font = '800 24px Inter, sans-serif';
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
+      ctx.letterSpacing = '4px';
+      ctx.fillText('DAYLOG STORY', W / 2, footerY);
+
+      const totalCount = appState.items.length;
+      const summaryText = `${totalCount} TASKS COMPLETED`;
+      ctx.font = '800 20px Inter, sans-serif';
+      const sumWidth = ctx.measureText(summaryText).width + 50;
+      drawRoundedRect((W - sumWidth) / 2, footerY + 26, sumWidth, 42, 21, 'rgba(245, 158, 11, 0.18)', 'rgba(245, 158, 11, 0.35)');
+      ctx.fillStyle = '#FEF3C7';
+      ctx.letterSpacing = '1.5px';
+      ctx.fillText(summaryText, W / 2, footerY + 54);
+
+      ctx.textAlign = 'left';
+      ctx.letterSpacing = '0px';
+    }
+
+    loadSavedState();
+
+    logDateInput.value = appState.date;
+    logMoodSelect.value = appState.mood;
+    logCommentInput.value = appState.comment;
+    darknessSlider.value = Math.round(appState.bgDarkness * 100);
+    darknessLabel.textContent = `${Math.round(appState.bgDarkness * 100)}%`;
+    blurSlider.value = appState.bgBlur;
+    blurLabel.textContent = appState.bgBlur === 0 ? 'なし' : (appState.bgBlur < 5 ? '微ぼかし' : '強め');
+
+    logDateInput.addEventListener('change', (e) => {
+      appState.date = e.target.value;
+      saveState();
+      renderStoryCanvas();
+    });
+
+    logMoodSelect.addEventListener('change', (e) => {
+      appState.mood = e.target.value;
+      saveState();
+      renderStoryCanvas();
+    });
+
+    logCommentInput.addEventListener('input', (e) => {
+      appState.comment = e.target.value;
+      saveState();
+      renderStoryCanvas();
+    });
+
+    addNewItemBtn.addEventListener('click', () => {
+      const presets = [
+        { title: 'TOEICリスニング', value: '45', unit: '分', iconKey: 'book-open' },
+        { title: '単語特急', value: '80', unit: '語', iconKey: 'file-text' },
+        { title: '筋トレ ワークアウト', value: '35', unit: '分', iconKey: 'dumbbell' },
+        { title: '技術書 読書', value: '20', unit: 'ページ', iconKey: 'bookmark' }
+      ];
+      const pick = presets[appState.items.length % presets.length];
+      appState.items.push({
+        id: Date.now().toString(),
+        title: pick.title,
+        value: pick.value,
+        unit: pick.unit,
+        iconKey: pick.iconKey
+      });
+      saveState();
+      renderActivityList();
+      renderStoryCanvas();
+    });
+
+    quickSampleBtn.addEventListener('click', () => {
+      appState.items = [
+        { id: '1', title: 'TOEIC公式問題集', value: '90', unit: '分', iconKey: 'book-open' },
+        { id: '2', title: '文法特急 Part5', value: '30', unit: '問', iconKey: 'file-text' },
+        { id: '3', title: '夜間ランニング', value: '5.2', unit: 'km', iconKey: 'activity' },
+        { id: '4', title: '技術書 読書', value: '28', unit: 'ページ', iconKey: 'bookmark' }
+      ];
+      appState.mood = 'DEEP FOCUS';
+      appState.comment = 'Part5の解くスピードが向上。明日はPart7精読！';
+      logMoodSelect.value = appState.mood;
+      logCommentInput.value = appState.comment;
+      saveState();
+      renderActivityList();
+      renderStoryCanvas();
+      showToast('サンプルを読み込みました');
+    });
+
+    function getCanvasBlob() {
+      return new Promise(resolve => {
+        storyCanvas.toBlob(blob => resolve(blob), 'image/png', 0.95);
+      });
+    }
+
+    function downloadImageFile() {
+      const link = document.createElement('a');
+      link.download = `daylog-story-${appState.date || 'today'}.png`;
+      link.href = storyCanvas.toDataURL('image/png');
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      showToast('画像を保存しました');
+    }
+
+    async function shareToStory() {
+      try {
+        const blob = await getCanvasBlob();
+        const file = new File([blob], `daylog-${appState.date}.png`, { type: 'image/png' });
+
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            files: [file],
+            title: '今日の達成ログ',
+            text: '今日の活動記録 #DayLog'
+          });
+          showToast('共有シートを開きました');
+        } else {
+          openPreviewModal();
+        }
+      } catch (err) {
+        if (err.name !== 'AbortError') {
+          openPreviewModal();
+        }
+      }
+    }
+
+    function openPreviewModal() {
+      const dataUrl = storyCanvas.toDataURL('image/png');
+      modalImagePreview.src = dataUrl;
+      previewModal.classList.remove('hidden');
+    }
+
+    function closePreviewModal() {
+      previewModal.classList.add('hidden');
+    }
+
+    openPreviewHeaderBtn.addEventListener('click', openPreviewModal);
+    downloadBtn.addEventListener('click', downloadImageFile);
+    shareBtn.addEventListener('click', shareToStory);
+    modalDownloadBtn.addEventListener('click', downloadImageFile);
+    modalShareBtn.addEventListener('click', shareToStory);
+    closeModalBtn.addEventListener('click', closePreviewModal);
+
+    previewModal.addEventListener('click', (e) => {
+      if (e.target === previewModal) closePreviewModal();
+    });
+
+    window.addEventListener('DOMContentLoaded', () => {
+      renderActivityList();
+      setBackgroundImage(appState.bgUrl || AESTHETIC_BG_COLLECTION[0], false, appState.isCustomPhoto);
+      lucide.createIcons();
+    });
+  </script>
+</body>
+</html>
